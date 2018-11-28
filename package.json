@@ -1,0 +1,22 @@
+{
+  "name": "blockchain_udacity",
+  "version": "1.0.0",
+  "description": "Udacity Nano Degree BlockChain Developer",
+  "main": "index.js",
+  "dependencies": {
+    "crypto-js": "^3.1.9-1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "blockdev"
+  },
+  "keywords": [
+    "blockchain"
+  ],
+  "author": "bernestoalberto",
+  "license": "ISC"
+}
