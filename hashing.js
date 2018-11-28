@@ -6,11 +6,14 @@ let crypto  = {
     let hash = cryptoSha(ob).words;
     let final = '';
     for(let current of hash){
-     final += current+'-';
+     final += current;
     }
-    console.log(final);
+    console.log(final + '\n');
     }
-
+,
+genereteHash : ()=>{
+    
+}
 
 
 };
