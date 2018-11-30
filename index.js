@@ -33,24 +33,54 @@ const bitcoinMessage = require('bitcoinjs-message');
 // console.log(signature2.toString('base64')+'\n');
 // console.log(signature3.toString('base64')+'\n');
 
-let pbk= 'L365BaHQLS84X9oDssLSzXdGoF8xbA7krJof2h7EFtHQ5n51QLi6';
- let keypair= bitcoin.ECPair.fromWIF(pbk); 
-  let pk = keypair.privateKey;             
-let message = '1gLZYJm812Ab18vTwYek9KwdpjLckcfZg: Udacity rocks!';
+// let pbk= 'L365BaHQLS84X9oDssLSzXdGoF8xbA7krJof2h7EFtHQ5n51QLi6';
+//  let keypair= bitcoin.ECPair.fromWIF(pbk); 
+//   let pk = keypair.privateKey;             
+// let message = '1gLZYJm812Ab18vTwYek9KwdpjLckcfZg: Udacity rocks!';
 
 // Verify message
-let address = '1gLZYJm812Ab18vTwYek9KwdpjLckcfZg' ;
+// let address = '1gLZYJm812Ab18vTwYek9KwdpjLckcfZg' ;
 // console.log(bitcoinMessage.verify(message,address,signature1)+'\n');
 // 
 // console.log(bitcoinMessage.verify(message,address,signature2)+'\n');
 
 
 
-const signature = bitcoinMessage.sign(message,pk,keypair.compressed);
-console.log(signature.toString('base64')+'\n');
+// const signature = bitcoinMessage.sign(message,pk,keypair.compressed);
+// console.log(signature.toString('base64')+'\n');
 
 
-console.log(bitcoinMessage.verify(message,address,signature)+'\n');
+// console.log(bitcoinMessage.verify(message,address,signature)+'\n');
 
 
+const be = require('blockexplorer');
 
+/*async function  getBlock(index){
+let hash = await be.blockIndex(index);
+let block = await be.block(hash);
+console.log(block);
+}*/
+ function  getBlock(index){
+	let hash = be.blockIndex(index).then((hash)=>{
+		hash = JSON.parse(hash).blockHash;
+		console.log(`blockIndex:  ${index}  -  ${hash} \n`);
+		 be.block(hash).
+		 then((block)=>{
+			 let bloque = JSON.parse(block);
+			console.log(`Block:   ${index}  - ${bloque.hash}  \n`);
+		 }).
+		 catch((error)=>{
+			console.error(error);
+			});
+	}).catch((error)=>{
+    console.error(error);
+	});
+
+	}
+	(function theLoop (i) {
+		setTimeout(function () {
+			getBlock(i);
+			i++;
+			if (i < 3) theLoop(i);
+		}, 3600);
+	  })(0);
