@@ -25,7 +25,6 @@ getAllBlocks: ()=>{
 return new Promise((resolve,reject)=>{
   db.createReadStream()
   .on('data', function (data) {
-    console.log(`Block # ${data.key} Hash : ${data.value} `)
       dataArray.push(data);
   })
   .on('error', function (err) {

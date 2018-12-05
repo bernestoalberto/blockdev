@@ -15,8 +15,11 @@ class Block {
 
 class BlockChain{
     constructor(){
-        this.chain =[];
-       this.addBlock(new Block("First block in the chain - Genesis block"))
+        this.chain=[];
+       this.getBlockHeight().then((value)=>{
+        (value.length == 0)?this.addBlock(new Block("First block in the chain - Genesis block")):console.log(`BlockChain long is ${value.length} block(s)`);;
+       }).catch((error)=>{console.log(error)});
+       
     }
     createGenesisBlock(){
         return new Block("First block in the chain - Genesis block");
@@ -36,22 +39,39 @@ class BlockChain{
         }
         newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
         this.chain.push(newBlock);
-        level.addDataToLevelDB(newBlock);
+        return new Promise((resolve, reject)=>{
+        level.addDataToLevelDB(newBlock).then((value)=>{
+             resolve(value);
+        }).catch((error)=>{
+             reject(error);
+        });
+        });
+    }
+    
+    printBlockChain(list){
+        (list.length > 0) ?console.log(`This is the genesis block ${list[0].value}`):'';
+        // console.log(`This is the last block ${value[value.length - 1].value}`);
+        for(let current of list){
+            console.log(`Block # ${current.key} Hash : ${current.value} `);
+        }
+        
     }
     //get block height
     getBlockHeight(){
+        return new Promise((resolve,reject)=>{
         level.getAllBlocks().
         then((value)=>{
-            console.log(`BlockChin long is ${value.length} block(s)`);
-            console.log(`This is the last block ${value[value.length - 1].value}`);
+            this.printBlockChain(value);
+            resolve(value);
         }).
         catch((error)=>{
             console.log(error);
+            reject(error);
+        });
         });
     }
     //get block
     getBlock(blockHeight){
-        //  level.getLevelDBData(JSON.parse(JSON.stringify(this.chain[blockHeight]))).
         return new Promise((resolve,reject)=>{
      level.getLevelDBData(blockHeight).
      then((value)=>{
@@ -64,7 +84,6 @@ class BlockChain{
      });
     });
     }
-
  // validate block
  validateBlock(blockHeight){
     return new Promise((resolve,reject)=>{
@@ -74,15 +93,15 @@ class BlockChain{
    let blockHash = block.hash;
    // remove block hash to test block integrity
 //    block.hash = '';
-   // generate block hash
+   // generate block hash   
    let validBlockHash = SHA256(JSON.stringify(block)).toString();
    // Compare
    if (blockHash===validBlockHash) {
        console.log('valid');
        resolve(true);
      } else {
-       console.log(`Block # ${blockHeight} invalid hash:\n ${blockHash} <> ${validBlockHash}`);
-       reject(false);
+       console.log(`Block # ${blockHeight} invalid hash:\n ${block} <> ${validBlockHash}`);
+       reject(Error('Invalid Hash'));
      }
     }).catch((error)=>{
         console.log(error);
@@ -97,13 +116,15 @@ class BlockChain{
      level.getAllBlocks().then((chains)=>{
       for (let chain of chains) {
         // validate block
-        this.validateBlock(chain.key).then((value)=>{
+        this.validateBlock(chain.key).then((error,value)=>{
         if(value==false)errorLog.push(i);
         // compare blocks hash link
         let blockHash = this.chain[i].hash;
         let previousHash = this.chain[i+1].previousBlockHash;
         if (blockHash!==previousHash)errorLog.push(i);
-        })
+        }).catch((error)=>{
+            console.log(error);
+        });
       } 
       if(errorLog.length>0) {
         console.log(`Block errors =  ${errorLog.length}`);
@@ -112,17 +133,18 @@ class BlockChain{
         console.log(`No errors detected`);
       }
     }).catch((error)=>{
-        console.log(error);
+        console.log(error); 
     });
 }
 }
 
 
 let blockchain = new BlockChain();
-//  console.log(` blockchain.chain`);
+ console.log(` blockchain.chain`);
 // blockchain.validateBlock(1);
 // blockchain.getBlock(1);
 blockchain.validateChain();
+// blockchain.getBlockHeight();
 
 
 /* ===== Testing ==============================================================|
