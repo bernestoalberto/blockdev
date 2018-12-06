@@ -20,6 +20,19 @@ let  persistent= {
   });
 
 },
+deleteBlock:(key)=>{
+  return new Promise((resolve,reject)=>{
+    db.del(key, (err)=> {
+      if (err) {
+        console.log( `Block ${key} `, err);
+      reject(err);
+      }
+      console.log( `Block ${key}  has deleted`);
+      resolve('');
+    })
+  });
+
+},
 getAllBlocks: ()=>{
   let dataArray  = [];
 return new Promise((resolve,reject)=>{
@@ -61,7 +74,7 @@ return new Promise((resolve,reject)=>{
     })
     .on('close', ()=> {
       // console.log(`Block #  ${i}`);
-      persistent.addLevelDBData(block.height, block.hash).then((value)=>{
+      persistent.addLevelDBData(block.height, JSON.stringify(block).toString()).then((value)=>{
        resolve(value);
       }).catch((err)=>{
         reject(error);

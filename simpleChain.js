@@ -17,7 +17,12 @@ class BlockChain{
     constructor(){
         this.chain=[];
        this.getBlockHeight().then((value)=>{
-        (value.length == 0)?this.addBlock(new Block("First block in the chain - Genesis block")):console.log(`BlockChain long is ${value.length} block(s)`);;
+        if(value.length == 0){
+            this.addBlock(new Block("First block in the chain - Genesis block"))
+    }
+        else{
+            console.log(`BlockChain long is ${value.length} block(s)`);
+        }
        }).catch((error)=>{console.log(error)});
        
     }
@@ -27,42 +32,70 @@ class BlockChain{
     
       // getLatest block method
       getLatestBlock(){
-        return this.chain[this.chain.length -1];
+        this.getBlockHeight().then((value)=>{
+            if(value.length == 0){
+                this.addBlock(new Block("First block in the chain - Genesis block"))
+        }         
+            if(value.length > 2){
+            
+            console.log(`The last block  id: ${value[value.length - 1].key} and #: ${(JSON.parse(value[value.length - 1].value).hash)} `);
+            }
+            else{
+              console.log(`The last block  id: ${value[1].key} and #: ${(JSON.parse(value[1].value)).hash} `);
+            }
+            ;
+           }).catch((error)=>{console.log(error)});
       }
 
 // Add new block
     addBlock(newBlock){
-        newBlock.height = this.chain.length;
-        newBlock.time =  new Date().getTime().toString().slice(0,-3);
-        if(this.chain.length > 0){
-         newBlock.previousblockHash = this.chain[this.chain.length-1].hash;
-        }
-        newBlock.hash = SHA256(JSON.stringify(newBlock)).toString();
-        this.chain.push(newBlock);
         return new Promise((resolve, reject)=>{
-        level.addDataToLevelDB(newBlock).then((value)=>{
-             resolve(value);
-        }).catch((error)=>{
-             reject(error);
+        blockchain.getBlockHeight().then((blockchain)=>{
+            if(blockchain.length > 0){
+                newBlock.previousblockHash = JSON.parse(blockchain[blockchain.length-1].value).hash;
+                newBlock.height = blockchain.length;
+                newBlock.time =  new Date().getTime().toString().slice(0,-3);
+                newBlock.hash =  SHA256(JSON.stringify(newBlock)).toString();
+                level.addDataToLevelDB(newBlock).then((value)=>{
+                    console.log(`New block was added ${newBlock.height}!!!`);
+                 resolve(value);
+               }).catch((error)=>{
+                    reject(error);
+               });
+            }  
+            else{
+                level.addDataToLevelDB(newBlock).then((value)=>{
+                    resolve(value);
+               }).catch((error)=>{
+                    reject(error);
+               });
+            }
+        })
+        .catch((error)=>{
+         console.log(error);
         });
         });
+ 
     }
     
-    printBlockChain(list){
+    printBlockChain(){
+        level.getAllBlocks().then((list)=>{   
         (list.length > 0) ?console.log(`This is the genesis block ${list[0].value}`):'';
         // console.log(`This is the last block ${value[value.length - 1].value}`);
         for(let current of list){
             console.log(`Block # ${current.key} Hash : ${current.value} `);
         }
-        
+    }).catch((error)=>{
+        console.error(error);
+
+    });
     }
     //get block height
     getBlockHeight(){
         return new Promise((resolve,reject)=>{
-        level.getAllBlocks().
-        then((value)=>{
-            this.printBlockChain(value);
-            resolve(value);
+        level.getAllBlocks(). then((blockchain)=>{
+            // this.printBlockChain(blockchain);
+            resolve(blockchain);
         }).
         catch((error)=>{
             console.log(error);
@@ -73,14 +106,21 @@ class BlockChain{
     //get block
     getBlock(blockHeight){
         return new Promise((resolve,reject)=>{
-     level.getLevelDBData(blockHeight).
-     then((value)=>{
+     level.getLevelDBData(blockHeight).then((block)=>{
          //validate block validateBlock
-         console.log(`Hash:${value} => blockHeight: ${blockHeight}`);
-         resolve(value);
+         let blockJson = '';
+          if(blockHeight != 0){
+            blockJson = JSON.parse(block);
+          }
+          else{
+            blockJson= block;
+          };
+         console.log(`Hash:${blockJson.hash} => blockHeight: ${blockHeight}`);
+         resolve(block);
      })
      .catch((error)=>{
         console.log(error);
+        reject(Error(`Block ${blockHeight} not found!!! `));
      });
     });
     }
@@ -135,18 +175,40 @@ class BlockChain{
     }).catch((error)=>{
         console.log(error); 
     });
+   }
 }
-}
-
-
 let blockchain = new BlockChain();
- console.log(` blockchain.chain`);
-// blockchain.validateBlock(1);
-// blockchain.getBlock(1);
-blockchain.validateChain();
+// blockchain.printBlockChain();
+// blockchain.addBlock(new Block("Block"));
+console.log(`blockchain.chain`);
+blockchain.getBlockHeight();
+// blockchain.printBlockChain();
+// blockchain.addBlock(new Block(`Block Vincero`));
 // blockchain.getBlockHeight();
+// level.deleteBlock(2);
+// blockchain.getLatestBlock();
+// blockchain.validateBlock(1);
+// blockchain.getBlock(2);
+// blockchain.getBlock(3);
+// blockchain.getBlock(4);
+// blockchain.getBlock(5);
+// blockchain.getBlock(15);
+// blockchain.getBlock(18);
 
 
+
+//  level.deleteBlock(3);
+//  blockchain.getBlockHeight();
+/*for(let i = 3;i < 12; i++){
+     blockchain.addBlock(new Block(`Block ${i}`));
+}*/
+// blockchain.validateChain();
+// blockchain.getBlockHeight();
+/*for(let i = 2;i < 6; i++){
+  level.deleteBlock(i);
+}*/
+//  level.deleteBlock(2);
+//  level.deleteBlock(3);
 /* ===== Testing ==============================================================|
 |  - Self-invoking function to add blocks to chain                             |
 |  - Learn more:                                                               |
@@ -157,17 +219,21 @@ blockchain.validateChain();
 |    Bitcoin blockchain adds 8640 blocks per day                               |
 |     ( new block every 10 minutes )                                           |
 |  ===========================================================================*/
+/*let j =3;
+(function theLoop(j){
+setTimeout(function () {
+level.deleteBlock(j);
+if (j++) theLoop(j);
+},100);
+})(10);*/
 
 
 /*(function theLoop (i) {
     setTimeout(function () {
-        blockchain.addBlock(new Block(`Testing  ${i}`)).
-        then((value)=>{
-            console.log(`Value = ${value}`);
-        }).catch((error)=>{
-            console.log(error);
-        }
-        );
+        blockchain.addBlock(new Block(`Block  ${i}`)).then((value)=>{
+            blockchain.getBlockHeight();
+            blockchain.getLatestBlock();
+        }).catch((error)=>{console.log(error);});
       if (--i) theLoop(i);
     }, 100);
-  })(10);*/
+  })(10)*/
