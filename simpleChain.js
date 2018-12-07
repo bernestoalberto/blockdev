@@ -1,3 +1,9 @@
+/**
+ * @file simpleChain.js
+ * @author Ernesto Bonet <ebonet@eabonet.com>
+ * @version 0.1
+ */
+
 const SHA256 = require('crypto-js/sha256');
 const level = require('./leveldbSandBox');
 class Block {
@@ -26,11 +32,19 @@ class BlockChain{
        }).catch((error)=>{console.log(error)});
        
     }
+ /**
+   * @function createGenesisBlock
+   *@description Create the Genesis Block of the BlockChain
+   * @returns {void}
+   */
     createGenesisBlock(){
         return new Block("First block in the chain - Genesis block");
       }
-    
-      // getLatest block method
+ /**
+   * @function getLatestBlock
+   *@description Get the last block index
+   * @returns {Integer} The last block index
+   */
       getLatestBlock(){
         this.getBlockHeight().then((value)=>{
             if(value.length == 0){
@@ -46,11 +60,15 @@ class BlockChain{
             ;
            }).catch((error)=>{console.log(error)});
       }
-
-// Add new block
+ /**
+   * @function addBlock
+   *@description Adds a new block into the chain, to do that you need to assign the corresponding height, hash, previousBlockHash and timeStamp to your block.
+   @param {Block} 
+   * @returns {String} if was resolved or {Error} if was rejected
+   */
     addBlock(newBlock){
         return new Promise((resolve, reject)=>{
-        blockchain.getBlockHeight().then((blockchain)=>{
+            this.getBlockHeight().then((blockchain)=>{
             if(blockchain.length > 0){
                 newBlock.previousblockHash = JSON.parse(blockchain[blockchain.length-1].value).hash;
                 newBlock.height = blockchain.length;
@@ -78,6 +96,12 @@ class BlockChain{
  
     }
     
+    /**
+ * @function printBlockChain
+ * @author Ernesto Bonet <ebonet@eabonet.com>
+ * @version 0.1
+ */
+
     printBlockChain(){
         level.getAllBlocks().then((list)=>{   
         (list.length > 0) ?console.log(`This is the genesis block ${list[0].value}`):'';
@@ -90,7 +114,16 @@ class BlockChain{
 
     });
     }
-    //get block height
+    
+    /**
+ * @function getBlockHeight
+ * @description Counts all the Blocks in your chain and give you as a result the last height in your chain
+ * @param {Integer} blockHeight number of the block
+ * @returns {JSON} success or false on Error Message
+ * @author Ernesto Bonet <ebonet@eabonet.com>
+ * @version 0.1
+ */
+
     getBlockHeight(){
         return new Promise((resolve,reject)=>{
         level.getAllBlocks(). then((blockchain)=>{
@@ -103,7 +136,16 @@ class BlockChain{
         });
         });
     }
-    //get block
+    /**
+ * @function getBlock
+ * @description Gets a block and returns it as JSON string object
+ * @param {Integer} blockHeight number of the block
+ * @returns {JSON} success or false on Error Message
+ * @author Ernesto Bonet <ebonet@eabonet.com>
+ * @version 0.1
+ */
+
+
     getBlock(blockHeight){
         return new Promise((resolve,reject)=>{
      level.getLevelDBData(blockHeight).then((block)=>{
@@ -120,28 +162,42 @@ class BlockChain{
      })
      .catch((error)=>{
         console.log(error);
-        reject(Error(`Block ${blockHeight} not found!!! `));
+        reject(Error(Error(`Block ${blockHeight} not found!!! `)));
      });
     });
     }
- // validate block
+ 
+    /**
+ * @function validateBlock
+ * @description Validates block data integrity
+ * @param {Integer} blockHeight number of the block
+ * @returns True success or false on Error Message
+ * @author Ernesto Bonet <ebonet@eabonet.com>
+ * @version 0.1
+ */
+
  validateBlock(blockHeight){
     return new Promise((resolve,reject)=>{
     // get block object
-    let block=   this.getBlock(blockHeight).then((block)=>{
+    this.getBlock(blockHeight).then((block)=>{
    // get block hash
-   let blockHash = block.hash;
+   let jsobject =JSON.parse(block);
+
    // remove block hash to test block integrity
-//    block.hash = '';
+
    // generate block hash   
-   let validBlockHash = SHA256(JSON.stringify(block)).toString();
+  let vBlock = new Block(jsobject.body);
+   vBlock.previousblockHash = jsobject.previousblockHash;
+   vBlock.height = jsobject.height;
+   vBlock.time = jsobject.time;
+   let validBlockHash = SHA256(JSON.stringify(vBlock)).toString();
    // Compare
-   if (blockHash===validBlockHash) {
-       console.log('valid');
+      if (jsobject.hash===validBlockHash) {
+       console.log(`Block ${blockHeight} valid`);
        resolve(true);
      } else {
-       console.log(`Block # ${blockHeight} invalid hash:\n ${block} <> ${validBlockHash}`);
-       reject(Error('Invalid Hash'));
+       console.log(`Block # ${blockHeight} invalid hash:\n ${jsobject.hash} <> ${validBlockHash}`);    
+       reject(Error(false));
      }
     }).catch((error)=>{
         console.log(error);
@@ -150,65 +206,74 @@ class BlockChain{
     });
     
     }
-   // Validate blockchain
+    /**
+ * @function validateAllBlocks
+ * @description Validates all blocks from the blockChain at any time
+ * @returns True if succeed or false on Error Message
+ * @author Ernesto Bonet <ebonet@eabonet.com>
+ * @version 0.1
+ */
+
+    validateAllBlocks(){
+        return new Promise((resolve,reject)=>{
+          level.getAllBlocks().then((chains)=>{ 
+        for (let i= 1;i < chains.length;i++) {
+            // validate block
+           this.validateBlock(chains[i].key).then((value,error)=>{
+               let errorLog = [];
+            if(value==false)errorLog.push(i);
+                if(errorLog.length>0) {
+                    console.log(`Block errors =  ${errorLog.length}`);
+                    console.log(`Blocks: ${errorLog}`);
+                    reject(errorLog);
+                  } else {
+                    console.log(`No errors detected`);
+                    resolve(true)
+                  }
+     
+            // compare blocks hash link
+            let blockHash = chains[i].hash;
+            let previousHash = (chains[i+1])? JSON.parse(chains[i+1].value).previousblockHash:'';
+            if (blockHash!==previousHash)errorLog.push(i);
+            }).catch((error)=>{
+                console.log(error);
+                reject(error);
+            });
+          } 
+        });
+        });
+    }
+   
+    /**
+   *@function validateChain
+   * @description  Validate blockchain.To validate the entire chain,go through all the blocks
+   *  in the chain and verify the block integrity and also verify that 
+   * the previousBlockHash in current block match with the hash in the 
+   * previous block. Allows us to know if the entire chain is still valid at any moment or not
+   * @return {Boolean} True if valid and false is invalid
+   */
     validateChain(){
       let errorLog = [];
-     level.getAllBlocks().then((chains)=>{
-      for (let chain of chains) {
-        // validate block
-        this.validateBlock(chain.key).then((error,value)=>{
-        if(value==false)errorLog.push(i);
-        // compare blocks hash link
-        let blockHash = this.chain[i].hash;
-        let previousHash = this.chain[i+1].previousBlockHash;
-        if (blockHash!==previousHash)errorLog.push(i);
+    return new Promise((resolve, reject)=>{
+        this.validateAllBlocks().then((validation)=>{
+            resolve(validation);
         }).catch((error)=>{
             console.log(error);
+            reject(error);
         });
-      } 
-      if(errorLog.length>0) {
-        console.log(`Block errors =  ${errorLog.length}`);
-        console.log(`Blocks: ${errorLog}`);
-      } else {
-        console.log(`No errors detected`);
-      }
-    }).catch((error)=>{
-        console.log(error); 
-    });
+   });
    }
 }
 let blockchain = new BlockChain();
-// blockchain.printBlockChain();
-// blockchain.addBlock(new Block("Block"));
 console.log(`blockchain.chain`);
-blockchain.getBlockHeight();
+blockchain.validateChain();
+// blockchain.getBlockHeight();
+// blockchain.validateBlock(1);
 // blockchain.printBlockChain();
 // blockchain.addBlock(new Block(`Block Vincero`));
-// blockchain.getBlockHeight();
-// level.deleteBlock(2);
-// blockchain.getLatestBlock();
-// blockchain.validateBlock(1);
-// blockchain.getBlock(2);
 // blockchain.getBlock(3);
-// blockchain.getBlock(4);
-// blockchain.getBlock(5);
-// blockchain.getBlock(15);
-// blockchain.getBlock(18);
-
-
-
-//  level.deleteBlock(3);
 //  blockchain.getBlockHeight();
-/*for(let i = 3;i < 12; i++){
-     blockchain.addBlock(new Block(`Block ${i}`));
-}*/
-// blockchain.validateChain();
-// blockchain.getBlockHeight();
-/*for(let i = 2;i < 6; i++){
-  level.deleteBlock(i);
-}*/
-//  level.deleteBlock(2);
-//  level.deleteBlock(3);
+
 /* ===== Testing ==============================================================|
 |  - Self-invoking function to add blocks to chain                             |
 |  - Learn more:                                                               |
@@ -219,21 +284,15 @@ blockchain.getBlockHeight();
 |    Bitcoin blockchain adds 8640 blocks per day                               |
 |     ( new block every 10 minutes )                                           |
 |  ===========================================================================*/
-/*let j =3;
-(function theLoop(j){
-setTimeout(function () {
-level.deleteBlock(j);
-if (j++) theLoop(j);
-},100);
-})(10);*/
 
-
-/*(function theLoop (i) {
+/*
+  (function theLoop (i) {
     setTimeout(function () {
-        blockchain.addBlock(new Block(`Block  ${i}`)).then((value)=>{
-            blockchain.getBlockHeight();
-            blockchain.getLatestBlock();
-        }).catch((error)=>{console.log(error);});
-      if (--i) theLoop(i);
-    }, 100);
-  })(10)*/
+        let blockTest = new Block("Test Block - " + (i + 1));
+        blockchain.addBlock(blockTest).then((result) => {
+            console.log(result);
+            i++;
+            if (i < 10) theLoop(i);
+        });
+    }, 10000);
+  })(0);*/
