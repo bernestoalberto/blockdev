@@ -2,7 +2,7 @@
   "name": "blockchain_udacity",
   "version": "1.0.0",
   "description": "Udacity Nano Degree BlockChain Developer",
-  "main": "index.js",
+  "main": "simpleChain.js",
   "dependencies": {
     "bitcoinjs-lib": "^4.0.2",
     "bitcoinjs-message": "^2.0.0",

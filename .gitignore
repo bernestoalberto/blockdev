@@ -1,3 +1,7 @@
 node_modules
 package-lock.json
 .vscode
+block.js
+template.js
+index.js
+hashing.js
